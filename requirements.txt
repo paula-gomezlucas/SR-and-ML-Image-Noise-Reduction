@@ -1,0 +1,14 @@
+torch
+torchvision
+scikit-image
+matplotlib
+pandas
+numpy
+opencv-python
+scipy
+scikit-learn
+timm
+scikit-image
+astropy
+tqdm
+gymnasium

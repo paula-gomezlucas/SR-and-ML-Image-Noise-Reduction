@@ -1,0 +1,24 @@
+# FLAGGED ISSUES AND CONCERNS
+# Format: [Location] - Concern - Possible Fixes
+
+[utils/image_tools.py > load_fits_tensor()]
+- Concern: Normalization may collapse meaningful flux info or introduce bias
+- Possible Fixes:
+    • Add support for log-scaling: log(1 + alpha * flux)
+    • Support for z-score normalization (mean/std)
+    • Use multi-channel tensor for gain, exposure, or WCS-based weights
+    • Tune percentile (e.g., 98, 99, 99.9) as a hyperparameter
+    • Mask NaNs instead of converting to zero (to preserve pixel-level info)
+
+[general training pipeline]
+- Concern: Using only normalized flux values may lead to overfitting or failure to generalize
+- Possible Fixes:
+    • Introduce randomized augmentations or domain shifts
+    • Add synthetic noise/noise profiles during training
+    • Validate on regions with different observational setups
+
+[reward function in utils/evaluation.py > compute_reward()]
+- Concern: Reward metric (TP / (TP+FP+FN)) assumes 1:1 matching tolerance
+- Possible Fixes:
+    • Experiment with precision/recall weighting (e.g., F1, weighted sum)
+    • Consider top-k matching, or fuzzy object matching based on PSF
