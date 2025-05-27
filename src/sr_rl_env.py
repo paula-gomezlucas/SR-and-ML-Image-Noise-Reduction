@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from gymnasium import Env, spaces
-from src.models.rl_policy import RLPolicy, sample_action
+from models.rl_policy import RLPolicy, sample_action
 from models.stochastic_resonance import apply_stochastic_resonance
 from models.detection_head import HeatmapDetector
 from utils.evaluation import compute_reward
@@ -51,3 +51,44 @@ class SRRLImageEnv(Env):
         info = {"action_params": action_params, "image_path": self.image_paths[self.idx]}
 
         return processed, reward, done, False, info
+    
+    def compute_log_prob(self, action, noise_level_tensor, nl_logits):
+        """
+        Compute the log probability of the sampled action.
+
+        Args:
+            action: dict with 'noise_level' (float) and 'nonlinearity' (int index)
+            noise_level_tensor: tensor of shape [1, 1] from the policy
+            nl_logits: tensor of shape [1, 3] from the policy
+
+        Returns:
+            log_prob: scalar tensor with the combined log-probability
+        """
+        # Gaussian noise log prob
+        dist_noise = torch.distributions.Normal(noise_level_tensor.squeeze(), 0.1)
+        log_prob_noise = dist_noise.log_prob(torch.tensor(action['noise_level'], device=nl_logits.device))
+
+        # Categorical nonlinearity log prob
+        dist_nl = torch.distributions.Categorical(logits=nl_logits.squeeze(0))
+        log_prob_nl = dist_nl.log_prob(torch.tensor(action['nonlinearity'], device=nl_logits.device))
+
+        return log_prob_noise + log_prob_nl
+    
+    def apply_sr(self, image_tensor, action):
+        action_params = {
+            'noise_level': float(action['noise_level']),
+            'nonlinearity': ['tanh', 'relu', 'identity'][int(action['nonlinearity'])]
+        }
+        return apply_stochastic_resonance(image_tensor, action_params)
+    
+    def get_ground_truth_in_tile(self, x, y, tile_size):
+        """
+        Extract GT coords within a tile.
+        """
+        gt = []
+        for gx, gy in self.gt_catalog:
+            if x <= gx < x + tile_size and y <= gy < y + tile_size:
+                gt.append([gx - x, gy - y])  # Local to tile coords
+        return np.array(gt)
+
+

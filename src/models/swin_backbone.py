@@ -11,19 +11,8 @@ class SwinBackbone(nn.Module):
 
     def forward(self, x):
         feats = self.backbone(x)  # List[Tensor]
-        x = feats[-1]  # Last stage
+        return feats[-1]  # [B, C, H, W]
 
-        if x.dim() == 3:  # [B, N, C]
-            B, N, C = x.shape
-            H = W = int(N ** 0.5)
-            x = x.transpose(1, 2).reshape(B, C, H, W)
-
-        elif x.dim() == 5:  # [B, D, H, W, C]
-            B, D, H, W, C = x.shape
-            x = x[:, -1]  # take last depth slice → [B, H, W, C]
-            x = x.permute(0, 3, 1, 2)  # → [B, C, H, W]
-
-        return x
 
 
 

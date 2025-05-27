@@ -2,25 +2,49 @@ import pandas as pd
 import numpy as np
 from io import StringIO
 
-def load_cat_as_array(cat_path):
+def load_sextractor_catalog(path, x_col='X_IMAGE', y_col='Y_IMAGE'):
     """
-    Load a SExtractor .cat file into an Nx2 or Nx3 numpy array.
-
-    Assumes columns: [ID, X_IMAGE, Y_IMAGE, ...]
-
+    Loads the ground truth coordinates from a SExtractor .cat file (ASCII_HEAD format).
+    
     Args:
-        cat_path (str): Path to the .cat file
+        path (str): Path to the .cat file.
+        x_col (str): Name of the x-coordinate column (default: 'X_IMAGE').
+        y_col (str): Name of the y-coordinate column (default: 'Y_IMAGE').
 
     Returns:
-        np.ndarray: Nx2 or Nx3 array with object positions
+        np.ndarray: Array of shape [N, 2] with (x, y) positions.
     """
-    with open(cat_path, 'r') as f:
-        lines = [line for line in f if not line.startswith('#') and line.strip()]
+    with open(path, 'r') as f:
+        lines = f.readlines()
 
-    df = pd.read_csv(StringIO(''.join(lines)), sep=r'\s+', header=None)
-    if df.shape[1] < 3:
-        raise ValueError("Expected at least 3 columns (ID, X, Y)")
+    # Find column names (starts with #)
+    header_lines = [l for l in lines if l.startswith('#')]
+    col_map = {}
+    for line in header_lines:
+        parts = line.strip().split()
+        if len(parts) >= 3 and parts[0] == '#':
+            col_index = int(parts[1]) - 1
+            col_name = parts[2]
+            col_map[col_name] = col_index
 
-    return df[[1, 2]].to_numpy(dtype=np.float32)
+    if x_col not in col_map or y_col not in col_map:
+        raise ValueError(f"Columns {x_col} or {y_col} not found in catalog header.")
 
-load_sextractor_catalog = load_cat_as_array  # alias for compatibility
+    x_idx = col_map[x_col]
+    y_idx = col_map[y_col]
+
+    # Parse data lines
+    data_lines = [l for l in lines if not l.startswith('#') and l.strip()]
+    coords = []
+    for line in data_lines:
+        parts = line.strip().split()
+        if len(parts) > max(x_idx, y_idx):
+            x = float(parts[x_idx])
+            y = float(parts[y_idx])
+            coords.append((x, y))
+
+    return np.array(coords)
+
+
+# Aliases
+load_cat_as_array = load_sextractor_catalog # alias for compatibility

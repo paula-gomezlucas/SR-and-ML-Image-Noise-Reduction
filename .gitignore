@@ -135,6 +135,12 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.srml/
+srml/
+
+# VS Code settings
+vscode/
+.vscode/
 
 # Spyder project settings
 .spyderproject
@@ -173,5 +179,14 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# SRML Local Environment
-.srml/
+# ignore FITS and model checkpoints
+*.fits
+*.pt
+*.gz
+
+#Ignore test files
+.ignore
+ignore/
+src/output_visualizations/
+output_visualizations/
+.output_visualizations

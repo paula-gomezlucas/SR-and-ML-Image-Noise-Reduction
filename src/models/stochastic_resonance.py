@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 # Apply stochastic resonance with customizable noise and nonlinearity
 
@@ -18,6 +19,9 @@ def apply_stochastic_resonance(image, action_params, noise_type='gaussian', nonl
     Returns:
         torch.Tensor: Processed image.
     """
+    if isinstance(image, np.ndarray):
+        image = torch.from_numpy(image)
+
     # Extract RL-controlled parameters
     noise_level = action_params.get('noise_level', 0.01)
     nonlinearity = action_params.get('nonlinearity', nonlinearity)

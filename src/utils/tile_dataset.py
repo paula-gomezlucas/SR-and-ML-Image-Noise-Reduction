@@ -13,6 +13,7 @@ def extract_tiles_and_labels(image: np.ndarray, catalog: np.ndarray, tile_size: 
     """
     tiles = []
     labels = []
+    tile_origins = []
     h, w = image.shape
 
     with open(log_file, 'w') as f:
@@ -41,8 +42,9 @@ def extract_tiles_and_labels(image: np.ndarray, catalog: np.ndarray, tile_size: 
                 if objects:
                     tiles.append(tile)
                     labels.append(heatmap)
+                    tile_origins.append((x, y))  # ← record tile's top-left position
 
-    return tiles, labels
+    return tiles, labels, tile_origins
 
 class FITSTileDataset(Dataset):
     def __init__(self, fits_dir, catalog_dir):
@@ -53,6 +55,7 @@ class FITSTileDataset(Dataset):
         self.catalog_dir = catalog_dir
         self.tiles = []
         self.targets = []
+        self.tile_origins = []
         self.tile_size = 224
 
         for fname in self.fits_files:
@@ -70,8 +73,9 @@ class FITSTileDataset(Dataset):
             catalog_path = os.path.join(catalog_dir, catalog_name)
             catalog = load_sextractor_catalog(catalog_path)
 
-            tiles, labels = extract_tiles_and_labels(img_data, catalog, tile_size=self.tile_size, log_file="detections.txt")
+            tiles, labels, origins = extract_tiles_and_labels(img_data, catalog, tile_size=self.tile_size, log_file="detections.txt")
             self.tiles.extend(tiles)
+            self.tile_origins.extend(origins)
             self.targets.extend([label[np.newaxis, :, :] for label in labels])  # shape: [1, H, W]
 
         print(f"Total tiles: {len(self.tiles)}")
@@ -92,4 +96,4 @@ class FITSTileDataset(Dataset):
             print(f"[Warning] NaNs found at idx {idx}, replacing with 0")
             tile_tensor = torch.nan_to_num(tile_tensor, nan=0.0)
 
-        return tile_tensor, target_tensor
+        return tile_tensor, target_tensor, torch.tensor(self.tile_origins[idx])
