@@ -96,4 +96,4 @@ class FITSTileDataset(Dataset):
             print(f"[Warning] NaNs found at idx {idx}, replacing with 0")
             tile_tensor = torch.nan_to_num(tile_tensor, nan=0.0)
 
-        return tile_tensor, target_tensor, torch.tensor(self.tile_origins[idx])
+        return tile_tensor, target_tensor, torch.tensor(self.tile_origins[idx]) 
